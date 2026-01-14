@@ -7,6 +7,9 @@ const app = express();
 const path = require('path');
 const methodOverride = require('method-override');
 
+const uuid = require('uuid');
+const uuidv4 = uuid.v4;
+
 const port = 8080;
 
 app.set("view engine", "ejs");
@@ -79,6 +82,31 @@ app.get('/user/:id/edit', (req, res) => {
     }
 })
 
+//Update Route 
+app.patch('/user/:id', (req, res) => {
+    const {id} = req.params;
+    const {username: newUsername, password: formPassword} = req.body;
+    let q = "SELECT * FROM user WHERE id = ?";
+    
+    connection.query(q, [id], (err, result) => {
+        if(err) {
+            res.status(500).send("Database error");
+        }
+        let data = result[0];
+        if(data.password == formPassword) {
+            let q = "UPDATE user SET username = ? WHERE id = ?";
+            connection.query(q, [newUsername, id], (err, result) => {
+                if(err) {
+                    res.status(500).send("Database error");
+                }
+                res.redirect('/user');
+            })
+        } else {
+            res.send("wrong password");
+        }
+    })
+})
+
 //Delete Route
 app.get('/user/:id/delete', (req, res) => {
     let {id} = req.params;
@@ -116,32 +144,24 @@ app.delete('/user/:id', (req, res) => {
     })
 })
 
-
-//Update Route 
-app.patch('/user/:id', (req, res) => {
-    const {id} = req.params;
-    const {username: newUsername, password: formPassword} = req.body;
-    let q = "SELECT * FROM user WHERE id = ?";
-    
-    connection.query(q, [id], (err, result) => {
-        if(err) {
-            res.status(500).send("Database error");
-        }
-        let data = result[0];
-        if(data.password == formPassword) {
-            let q = "UPDATE user SET username = ? WHERE id = ?";
-            connection.query(q, [newUsername, id], (err, result) => {
-                if(err) {
-                    res.status(500).send("Database error");
-                }
-                res.redirect('/user');
-            })
-        } else {
-            res.send("wrong password");
-        }
-    })
+//Add Route 
+app.get('/user/new', (req, res) => {
+    res.render("newForm.ejs");
 })
 
+app.post('/user', (req, res) => {
+    let {username, email, password} = req.body;
+    let id = uuidv4();
+    let user = [id, username, email, password];
+
+    let q = "INSERT INTO user (id, username, email, password) VALUES (?, ?, ?, ?)";
+    connection.query(q, user, (err, result) => {
+        if(err) {
+            res.status(500).send("some error in Database");
+        }
+        res.redirect('/user');
+    })
+})
 
 // connection.end();
 
