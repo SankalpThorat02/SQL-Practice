@@ -79,6 +79,44 @@ app.get('/user/:id/edit', (req, res) => {
     }
 })
 
+//Delete Route
+app.get('/user/:id/delete', (req, res) => {
+    let {id} = req.params;
+    let q = "SELECT * FROM user WHERE id = ?";
+    connection.query(q, [id], (err, data) => {
+        if(err) {
+            res.status(500).send("Some error in Database");
+        }
+        let user = data[0];
+        res.render("deleteForm.ejs", {user});
+    } )
+})
+
+app.delete('/user/:id', (req, res) => {
+    let {id} = req.params;
+    let {pass: formPassword} = req.body;
+    let q = "SELECT * FROM user WHERE id = ?";
+    connection.query(q, [id], (err, data) => {
+        if(err) {
+            res.status(500).send("Some error in Database");
+        }
+        let user = data[0];
+        if(user.password != formPassword) {
+            res.send("Wrong password");
+        }
+        else {
+            let q2 = "DELETE FROM user WHERE id = ?";
+            connection.query(q2, [id], (err, result) => {
+                if(err) {
+                    res.status(500).send("Some error in Database");
+                }
+                res.redirect('/user');
+            }) 
+        }
+    })
+})
+
+
 //Update Route 
 app.patch('/user/:id', (req, res) => {
     const {id} = req.params;
